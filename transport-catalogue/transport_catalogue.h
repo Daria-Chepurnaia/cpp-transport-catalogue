@@ -8,12 +8,12 @@
 #include <string_view>
 #include <vector>
 #include <set>
+#include <optional>
 
 namespace transport_catalogue{
-class TransportCatalogue {
-	
+class TransportCatalogue {	
     public:
-         struct Stop {
+        struct Stop {
             std::string name_of_stop;
             Coordinates coordinates;
         };
@@ -22,13 +22,24 @@ class TransportCatalogue {
             std::string route;
             std::vector<Stop*> stops_on_route;
         };
+    
+        struct StopInfo {
+            std::set<std::string_view> buses;
+        };
+
+        struct BusInfo {
+            int stops_on_route{};
+            size_t unique_stops_num{};
+            double route_length{};
+        };
+    
         void AddStop(const std::string& name, const Coordinates& coordinates);
         void AddBus(const std::string& route, const std::vector<std::string_view> stops);
         Stop* FindStop(std::string_view stop_name) const;
         Bus* FindBus(std::string_view bus_name) const;
     
-        bool GetBusInfo(std::string bus, int &stops_on_route, size_t &unique_stops, double &route_length) const;
-        bool GetStopInfo(std::string stop, std::set<std::string_view> &buses) const;
+        std::optional<BusInfo> GetBusInfo(std::string bus) const;
+        std::optional<StopInfo> GetStopInfo(std::string stop) const;
     
     private:       
     

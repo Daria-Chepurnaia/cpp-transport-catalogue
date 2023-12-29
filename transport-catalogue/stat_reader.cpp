@@ -10,8 +10,7 @@ using namespace std;
 namespace transport_catalogue {
 namespace output_processing {
 void ParseAndPrintStat(const TransportCatalogue& tansport_catalogue, std::string_view request,
-                       std::ostream& output) {
-    // Реализуйте самостоятельно
+                       std::ostream& output) {    
     size_t first_space = request.find(' ');
     size_t start = request.find_first_not_of(' ', first_space);
     size_t end = request.find_last_not_of(' ', request.size() - 1);   
@@ -29,14 +28,12 @@ namespace details{
 void PrintBusInfo(const TransportCatalogue& tansport_catalogue, std::string &req, std::ostream& output){
     output << "Bus "s << req << ": "s;
     
-    int stops_on_route{};
-    size_t unique_stops_num{};
-    double route_length{};
+    auto bus_info = tansport_catalogue.GetBusInfo(req);    
     
-    if (tansport_catalogue.GetBusInfo(req, stops_on_route, unique_stops_num, route_length)) {  
-        output << to_string(stops_on_route) << " stops on route, "s 
-               << to_string(unique_stops_num) << " unique stops, "s
-               << setprecision(6) << route_length << " route length"s << endl; 
+    if (bus_info) {  
+        output << to_string(bus_info.value().stops_on_route) << " stops on route, "s 
+               << to_string(bus_info.value().unique_stops_num) << " unique stops, "s
+               << setprecision(6) << bus_info.value().route_length << " route length"s << endl; 
     } else {
         output << "not found"s << endl;
     }
@@ -45,13 +42,14 @@ void PrintBusInfo(const TransportCatalogue& tansport_catalogue, std::string &req
 void PrintStopInfo(const TransportCatalogue& tansport_catalogue, std::string &req, std::ostream& output){
     output << "Stop "s << req << ": "s;
     std::set<std::string_view> buses{};
-    if (tansport_catalogue.GetStopInfo(req, buses)) {
-        if (buses.empty()) {
+    auto stop_info = tansport_catalogue.GetStopInfo(req);
+    if (stop_info) {
+        if (stop_info.value().buses.empty()) {
             output << "no buses"s << endl;
         } else {
             output << "buses "s;
             bool first = true;
-            for (auto bus : buses) {                
+            for (auto bus : stop_info.value().buses) {                
                 if (first == true) {
                     output << bus;
                     first = false;

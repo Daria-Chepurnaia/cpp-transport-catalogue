@@ -3,7 +3,7 @@
 #include <string_view>
 #include <vector>
 #include <unordered_set>
-
+#include <optional>
 
 using namespace std;
 
@@ -40,27 +40,29 @@ TransportCatalogue::Bus* TransportCatalogue::FindBus(std::string_view bus_name) 
     return busname_to_bus_.at(bus_name);
 }
 
-bool TransportCatalogue::GetBusInfo(std::string bus, int &stops_on_route, size_t &unique_stops_num, double &route_length) const {
-    if (TransportCatalogue::FindBus(bus) == nullptr) return false;
-    stops_on_route = (TransportCatalogue::FindBus(bus)->stops_on_route).size();
+optional<TransportCatalogue::BusInfo> TransportCatalogue::GetBusInfo(std::string bus) const {
+    if (TransportCatalogue::FindBus(bus) == nullptr) return nullopt;
+    BusInfo bus_info;
+    bus_info.stops_on_route = (TransportCatalogue::FindBus(bus)->stops_on_route).size();
     unordered_set<Stop*> unique_stops;
     for (Stop* stop : TransportCatalogue::FindBus(bus)->stops_on_route) {
         unique_stops.insert(stop);        
     }
-    unique_stops_num = unique_stops.size();
+    bus_info.unique_stops_num = unique_stops.size();
     
     int size = (TransportCatalogue::FindBus(bus)->stops_on_route).size();
     for (int i = 0; i < size - 1; ++i) { 
-        route_length += ComputeDistance(TransportCatalogue::FindBus(bus)->stops_on_route[i]->coordinates, TransportCatalogue::FindBus(bus)->stops_on_route[i+1]->coordinates);                
+        bus_info.route_length += ComputeDistance(TransportCatalogue::FindBus(bus)->stops_on_route[i]->coordinates, TransportCatalogue::FindBus(bus)->stops_on_route[i+1]->coordinates);         
     }
-    return true;
+    return bus_info;
 }
 
-bool TransportCatalogue::GetStopInfo(std::string stop, std::set<std::string_view> &buses) const {
-    if (TransportCatalogue::FindStop(stop) == nullptr) return false;
+optional<TransportCatalogue::StopInfo> TransportCatalogue::GetStopInfo(std::string stop) const {
+    if (TransportCatalogue::FindStop(stop) == nullptr) return nullopt;
+    StopInfo stop_info;
     for (auto bus : stop_to_buses_.at(stop)) {
-        buses.insert(bus);
+        stop_info.buses.insert(bus);
     }
-    return true;
+    return stop_info;
 }
 }
