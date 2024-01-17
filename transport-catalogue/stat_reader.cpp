@@ -33,7 +33,8 @@ void PrintBusInfo(const TransportCatalogue& tansport_catalogue, std::string &req
     if (bus_info) {  
         output << to_string(bus_info.value().stops_on_route) << " stops on route, "s 
                << to_string(bus_info.value().unique_stops_num) << " unique stops, "s
-               << setprecision(6) << bus_info.value().route_length << " route length"s << endl; 
+               << setprecision(6) << bus_info.value().route_length << " route length, "s
+               << bus_info.value().curvature << " curvature"s << endl; 
     } else {
         output << "not found"s << endl;
     }

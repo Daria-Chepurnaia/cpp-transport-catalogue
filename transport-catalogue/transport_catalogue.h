@@ -30,11 +30,13 @@ class TransportCatalogue {
         struct BusInfo {
             int stops_on_route{};
             size_t unique_stops_num{};
-            double route_length{};
+            int route_length{};
+            double curvature{};            
         };
     
         void AddStop(const std::string& name, const Coordinates& coordinates);
         void AddBus(const std::string& route, const std::vector<std::string_view> stops);
+        void AddDistances(const std::string& stop_from, std::vector<std::pair<std::string, int>> distances);
         Stop* FindStop(std::string_view stop_name) const;
         Bus* FindBus(std::string_view bus_name) const;
     
@@ -42,12 +44,16 @@ class TransportCatalogue {
         std::optional<StopInfo> GetStopInfo(std::string stop) const;
     
     private:       
-    
+        class Hasher {
+            public:
+                 size_t operator()(const std::pair<Stop*, Stop*>& pair) const; 
+        };
         std::deque<Stop> stops_;
         std::unordered_map<std::string_view, Stop*> stopname_to_stop_;
         std::deque<Bus> all_routes_;
         std::unordered_map<std::string_view, Bus*> busname_to_bus_;
         std::unordered_map<std::string_view, std::unordered_set<std::string_view>> stop_to_buses_;
+        std::unordered_map<std::pair<Stop*, Stop*>, int, Hasher> distances_;
        
 };
 }

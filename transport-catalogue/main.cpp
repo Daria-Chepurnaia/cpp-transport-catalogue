@@ -12,6 +12,7 @@ int main() {
 
     int base_request_count;
     cin >> base_request_count >> ws;
+   
 
     {
         input_processing::InputReader reader;
@@ -19,8 +20,10 @@ int main() {
             string line;
             getline(cin, line);
             reader.ParseLine(line);
-        }
-        reader.ApplyCommands(catalogue);
+            //cout << "line is ok" << line << endl;
+            //cout << "ParseLine is ok" << endl;
+        }        
+        reader.ApplyCommands(catalogue);        
     }
 
     int stat_request_count;
