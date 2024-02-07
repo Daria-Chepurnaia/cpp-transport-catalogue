@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <cassert>
 #include <iterator>
+#include <iostream>
+#include <string>
+#include <utility>    
 
 /**
  * Парсит строку вида "10.123,  -30.1837" и возвращает пару координат (широта, долгота)
@@ -50,7 +53,7 @@ std::vector<std::pair<std::string, int>> ParseDistance (std::string_view str) {
         }
     
         std::string stop = (std::string)str.substr(stop_begin, stop_end - stop_begin);          
-        distances.push_back({stop, distance});       
+        distances.push_back({std::move(stop), distance});       
     }
     
     return distances;
@@ -143,16 +146,24 @@ void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) 
     
     for (auto cmnd : commands_) {
         if (cmnd.command == "Bus") {
-            catalogue.AddBus(cmnd.id,  ParseRoute(cmnd.description));
+            std::vector<TransportCatalogue::Stop*> stops_to_add;
+            std::vector<std::string_view> stops = ParseRoute(cmnd.description);
+            for (auto stop : stops) {
+                stops_to_add.push_back(catalogue.FindStop(stop));
+            }
+            catalogue.AddBus(cmnd.id, stops_to_add);
         }
     }
     
     for (auto cmnd : commands_) {
         if (cmnd.command == "Stop") {
-            catalogue.AddDistances(cmnd.id, ParseDistance(cmnd.description));
+            std::vector<std::pair<std::string, int>> parsed_distances = ParseDistance(cmnd.description);
+            for (auto [stop_to, distance] : parsed_distances) {
+                catalogue.SetDistance(catalogue.FindStop(cmnd.id), catalogue.FindStop(stop_to), distance);
+            }            
         }
     }
-    
+
 }
 }
 }

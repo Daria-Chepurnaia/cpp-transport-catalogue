@@ -35,13 +35,14 @@ class TransportCatalogue {
         };
     
         void AddStop(const std::string& name, const Coordinates& coordinates);
-        void AddBus(const std::string& route, const std::vector<std::string_view> stops);
-        void AddDistances(const std::string& stop_from, std::vector<std::pair<std::string, int>> distances);
+        void AddBus(const std::string& route, const std::vector<Stop*>& stops);
+        void SetDistance(TransportCatalogue::Stop* stop_from, TransportCatalogue::Stop* stop_to, int distance);
         Stop* FindStop(std::string_view stop_name) const;
         Bus* FindBus(std::string_view bus_name) const;
+        int GetDistance(Stop* stop_from, Stop* stop_to) const;
     
         std::optional<BusInfo> GetBusInfo(std::string bus) const;
-        std::optional<StopInfo> GetStopInfo(std::string stop) const;
+        std::optional<StopInfo> GetStopInfo(std::string stop) const;        
     
     private:       
         class Hasher {
@@ -52,7 +53,7 @@ class TransportCatalogue {
         std::unordered_map<std::string_view, Stop*> stopname_to_stop_;
         std::deque<Bus> all_routes_;
         std::unordered_map<std::string_view, Bus*> busname_to_bus_;
-        std::unordered_map<std::string_view, std::unordered_set<std::string_view>> stop_to_buses_;
+        std::unordered_map<std::string_view, std::unordered_set<Bus*>> stop_to_buses_;
         std::unordered_map<std::pair<Stop*, Stop*>, int, Hasher> distances_;
        
 };
