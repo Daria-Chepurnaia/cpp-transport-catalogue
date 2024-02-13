@@ -11,8 +11,7 @@ int main() {
     TransportCatalogue catalogue;    
     
     json::Document doc = json::Load(cin);    
-    JSONReader reader(doc);
-    
+    JSONReader reader(doc);    
     
     reader.FillCatalogue(catalogue);
     
@@ -25,5 +24,5 @@ int main() {
     handler.RenderMap(out);    
     Document doc_to_optput = reader.MakeJSON(catalogue, out);
     
-    reader.PrintInfo(doc_to_optput, cout);    
+    json::Print(doc_to_optput, cout);    
 }

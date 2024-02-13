@@ -1,35 +1,12 @@
 #include "json_reader.h"
 
 void JSONReader::FillCatalogue(TransportCatalogue& catalogue) {
-    for (auto req : base_reqs_.AsArray()) {
-        if (req.AsMap().at("type"s) == "Stop"s) {
-            catalogue.AddStop(req.AsMap().at("name"s).AsString(), {req.AsMap().at("latitude"s).AsDouble(), req.AsMap().at("longitude"s).AsDouble()});
-        }
-    }
-    
-    for (auto req : base_reqs_.AsArray()) {        
-        if (req.AsMap().at("type"s) == "Bus"s) {            
-            std::vector<Stop*> stops_to_add;
-            std::vector<std::string> stops = ProcessRoute(req);           
-            for (auto stop : stops) {
-                stops_to_add.push_back(catalogue.FindStop(stop));
-            }            
-            catalogue.AddBus(req.AsMap().at("name"s).AsString(), stops_to_add);            
-        }
-    }
-   
-    for (auto req : base_reqs_.AsArray()) {
-        if (req.AsMap().at("type"s) == "Stop"s) {
-            
-            for (auto [stop_to, distance] : req.AsMap().at("road_distances"s).AsMap()) {
-                catalogue.SetDistance(catalogue.FindStop(req.AsMap().at("name"s).AsString()), catalogue.FindStop(stop_to), distance.AsInt());
-            } 
-            
-        }
-    }    
+    FillAllStops(catalogue);
+    FillAllRoutes(catalogue);
+    FillAllDistances(catalogue);
 }
 
-Document JSONReader::MakeJSON(const TransportCatalogue& catalogue, std::ostringstream& out) {
+Document JSONReader::MakeJSON(const TransportCatalogue& catalogue, std::ostringstream& out) const {
     Array info;
     for (auto req : stat_reqs_.AsArray()) {
         Dict req_info;
@@ -58,10 +35,6 @@ Document JSONReader::MakeJSON(const TransportCatalogue& catalogue, std::ostrings
     return Document(Node(info));
 } 
 
-void JSONReader::PrintInfo(const Document& doc, std::ostream& out) {    
-    Print(doc, out);
-}
-
 std::vector<std::string> JSONReader::ProcessRoute(json::Node req) {
     std::vector<std::string> stops;
     for (auto stop : req.AsMap().at("stops"s).AsArray()) {               
@@ -76,7 +49,7 @@ std::vector<std::string> JSONReader::ProcessRoute(json::Node req) {
     return stops;
 }
 
-void JSONReader::FillStopReq(Dict& req_info, const std::optional<StopInfo>& stop_info) {
+void JSONReader::FillStopReq(Dict& req_info, const std::optional<StopInfo>& stop_info) const {
     if (!stop_info) {
         req_info["error_message"s] = Node("not found"s);
         return void();
@@ -88,7 +61,7 @@ void JSONReader::FillStopReq(Dict& req_info, const std::optional<StopInfo>& stop
     req_info["buses"s] = Node(buses);
 }
 
-void JSONReader::FillBusReq(Dict& req_info, const std::optional<BusInfo>& bus_info) {
+void JSONReader::FillBusReq(Dict& req_info, const std::optional<BusInfo>& bus_info) const {
     if (!bus_info) {
         req_info["error_message"s] = Node("not found"s);
         return void();
@@ -117,6 +90,47 @@ renderer::RenderSettings JSONReader::GetRenderSettings() {
     settings.color_palette = ProcessPaletteNode(render_settings_.AsMap().at("color_palette"s));       
 
     return settings;
+}
+
+std::map<std::string, bool> JSONReader::GetBusNameToRoundTrip() {
+    std::map<std::string, bool> name_to_roundtrip;
+    for (auto req : base_reqs_.AsArray()) {
+        if (req.AsMap().at("type"s).AsString() == "Bus") {
+            name_to_roundtrip[req.AsMap().at("name"s).AsString()] = req.AsMap().at("is_roundtrip"s).AsBool();
+        }
+    }
+    return name_to_roundtrip;
+}
+
+void JSONReader::FillAllStops(TransportCatalogue& catalogue) {
+    for (auto req : base_reqs_.AsArray()) {
+        if (req.AsMap().at("type"s) == "Stop"s) {
+            catalogue.AddStop(req.AsMap().at("name"s).AsString(), {req.AsMap().at("latitude"s).AsDouble(), req.AsMap().at("longitude"s).AsDouble()});
+        }
+    }
+}
+
+void JSONReader::FillAllRoutes(TransportCatalogue& catalogue) {
+    for (auto req : base_reqs_.AsArray()) {        
+        if (req.AsMap().at("type"s) == "Bus"s) {            
+            std::vector<Stop*> stops_to_add;
+            std::vector<std::string> stops = ProcessRoute(req);           
+            for (auto stop : stops) {
+                stops_to_add.push_back(catalogue.FindStop(stop));
+            }            
+            catalogue.AddBus(req.AsMap().at("name"s).AsString(), stops_to_add);            
+        }
+    }
+}
+
+void JSONReader::FillAllDistances(TransportCatalogue& catalogue) {
+    for (auto req : base_reqs_.AsArray()) {
+        if (req.AsMap().at("type"s) == "Stop"s) {
+            for (auto [stop_to, distance] : req.AsMap().at("road_distances"s).AsMap()) {
+                catalogue.SetDistance(catalogue.FindStop(req.AsMap().at("name"s).AsString()), catalogue.FindStop(stop_to), distance.AsInt());
+            } 
+        }
+    }
 }
 
 svg::Color JSONReader::ProcessColorNode(Node node) {        

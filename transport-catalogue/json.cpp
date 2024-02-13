@@ -290,88 +290,60 @@ Node LoadNode(istream& input) {
         return Node(num);
     }
 }
-
-Node::Node(Array array)
-    : node(move(array)) {
-}
-
-Node::Node(Dict map)
-    : node(move(map)) {
-}
-
+ 
 Node::Node(Number value) {
     if (holds_alternative<double>(value)) {
-        node = std::get<double>(value);
+        *this = std::get<double>(value);
     } else {
-        node = std::get<int>(value);
+        *this = std::get<int>(value);
     }   
 }
-
-Node::Node(string value)
-    : node(move(value)) {
-}
-    
-Node::Node(int value)
-    : node(value) {
-}
-    
-Node::Node(double value)
-    : node(value) {
-}
-    
-Node::Node(nullptr_t)
-    : node(nullptr) {
-}
-
-Node::Node(bool value)
-    :node(value) {
-}
-    
+   
     bool Node::IsInt() const {
-        if (holds_alternative<int>(node)) {        
+        if (holds_alternative<int>(*this)) {        
             return true;
         }
         return false;
     }
     bool Node::IsDouble() const {
-        if (holds_alternative<int>(node) || holds_alternative<double>(node)) {        
+        if (holds_alternative<int>(*this) || holds_alternative<double>(*this)) {        
             return true;
         }
         return false;
     }
     bool Node::IsPureDouble() const {
-        if (holds_alternative<double>(node)) {        
+        if (holds_alternative<double>(*this)) {        
             return true;
         }
         return false;
     }
     bool Node::IsBool() const {
-        if (holds_alternative<bool>(node)) {        
+        if (holds_alternative<bool>(*this)) {        
             return true;
         }
         return false;    
     }
     bool Node::IsString() const {
-        if (holds_alternative<std::string>(node)) {        
+        if (holds_alternative<std::string>(*this)) {        
             return true;
         }
         return false;    
     }
     bool Node::IsArray() const {
-        if (holds_alternative<Array>(node)) {        
+        if (holds_alternative<Array>(*this)) {        
             return true;
         }
         return false;    
     }
     bool Node::IsMap() const {
-        if (holds_alternative<Dict>(node)) {        
+        if (holds_alternative<Dict>(*this)) {        
             return true;
         }
         return false;    
     }
     
     bool Node::IsNull() const {
-        if (holds_alternative<std::nullptr_t>(node)) {        
+        if (holds_alternative<std::nullptr_t>(*this)) {        
             return true;
         }
         return false;    
@@ -379,44 +351,44 @@ Node::Node(bool value)
     
     int Node::AsInt() const{
         if (IsInt()) {
-            return std::get<int>(node);
+            return std::get<int>(*this);
         } else {
             throw std::logic_error(""s);
         }
     }
     bool Node::AsBool() const {
         if (IsBool()) {
-            return std::get<bool>(node);
+            return std::get<bool>(*this);
         } else {
             throw std::logic_error(""s);
         }
     }
     double Node::AsDouble() const {
         if (IsInt()) {
-            return (double)std::get<int>(node);
+            return (double)std::get<int>(*this);
         } else if (IsPureDouble()) {
-            return std::get<double>(node);
+            return std::get<double>(*this);
         } else {
             throw std::logic_error(""s);
         }
     }
     const std::string& Node::AsString() const {
         if (IsString()) {
-            return std::get<string>(node);
+            return std::get<string>(*this);
         } else {
             throw std::logic_error(""s);
         }
     }
     const Array& Node::AsArray() const {
         if (IsArray()) {
-            return std::get<Array>(node);
+            return std::get<Array>(*this);
         } else {
             throw std::logic_error(""s);
         }
     }
     const Dict& Node::AsMap() const {
         if (IsMap()) {
-            return std::get<Dict>(node);
+            return std::get<Dict>(*this);
         } else {
             throw std::logic_error(""s);
         }

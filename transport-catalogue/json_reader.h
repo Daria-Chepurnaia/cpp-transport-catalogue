@@ -23,23 +23,17 @@ public:
     }
     
     void FillCatalogue(TransportCatalogue& catalogue);     
-    Document MakeJSON(const TransportCatalogue& catalogue, std::ostringstream& out);
-    void PrintInfo(const Document& doc, std::ostream& out);
+    Document MakeJSON(const TransportCatalogue& catalogue, std::ostringstream& out) const;    
     renderer::RenderSettings GetRenderSettings();
-    std::map<std::string, bool> GetBusNameToRoundTrip() {
-        std::map<std::string, bool> name_to_roundtrip;
-        for (auto req : base_reqs_.AsArray()) {
-            if (req.AsMap().at("type"s).AsString() == "Bus") {
-                name_to_roundtrip[req.AsMap().at("name"s).AsString()] = req.AsMap().at("is_roundtrip"s).AsBool();
-            }
-        }
-        return name_to_roundtrip;
-    }
+    std::map<std::string, bool> GetBusNameToRoundTrip();
     
 private:
+    void FillAllStops(TransportCatalogue& catalogue);
+    void FillAllRoutes(TransportCatalogue& catalogue);
+    void FillAllDistances(TransportCatalogue& catalogue);
     std::vector<std::string> ProcessRoute(json::Node req);    
-    void FillStopReq(Dict& req_info, const std::optional<StopInfo>& stop_info);    
-    void FillBusReq(Dict& req_info, const std::optional<BusInfo>& bus_info);    
+    void FillStopReq(Dict& req_info, const std::optional<StopInfo>& stop_info) const;    
+    void FillBusReq(Dict& req_info, const std::optional<BusInfo>& bus_info) const;    
     svg::Color ProcessColorNode(Node node);    
     std::vector<svg::Color> ProcessPaletteNode(Node node);
     
