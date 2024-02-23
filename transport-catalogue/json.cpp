@@ -393,6 +393,22 @@ Node::Node(Number value) {
             throw std::logic_error(""s);
         }
     }
+    //for builder work
+    Array& Node::AsArray() {
+        if (IsArray()) {
+            return std::get<Array>(*this);
+        } else {
+            throw std::logic_error(""s);
+        }
+    }
+    
+    Dict& Node::AsMap() {
+        if (IsMap()) {
+            return std::get<Dict>(*this);
+        } else {
+            throw std::logic_error(""s);
+        }
+    }
 
 Document::Document(Node root)
     : root_(move(root)) {

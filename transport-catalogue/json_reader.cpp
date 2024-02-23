@@ -7,32 +7,33 @@ void JSONReader::FillCatalogue(TransportCatalogue& catalogue) {
 }
 
 Document JSONReader::MakeJSON(const TransportCatalogue& catalogue, std::ostringstream& out) const {
-    Array info;
+    Builder b;
+    auto info = b.StartArray();
     for (auto req : stat_reqs_.AsArray()) {
         Dict req_info;
 
         if (req.AsMap().at("type"s).AsString() == "Stop"s) {                
             std::optional<StopInfo> stop_info = catalogue.GetStopInfo(req.AsMap().at("name"s).AsString());
             //заполняет словарь req_info информацией об остановке
-            FillStopReq(req_info, stop_info);            
+            FillStopReq(req_info, stop_info);
         }       
 
         if (req.AsMap().at("type"s).AsString() == "Bus"s) {             
             std::optional<BusInfo> bus_info = catalogue.GetBusInfo(req.AsMap().at("name"s).AsString());
             //заполняет словарь req_info информацией об автобусе
-            FillBusReq(req_info, bus_info);           
+            FillBusReq(req_info, bus_info);
         }
         
         if (req.AsMap().at("type"s).AsString() == "Map"s) {             
             //добавляет карту в словарь req_info 
-            req_info["map"] = Node(out.str());           
+            req_info["map"] = Node(out.str());
         }
-
+        
         req_info["request_id"s] = Node(req.AsMap().at("id"s).AsInt());
-        info.push_back(req_info);       
+        info.Value(req_info);
     }
     
-    return Document(Node(info));
+    return Document(info.EndArray().Build());
 } 
 
 std::vector<std::string> JSONReader::ProcessRoute(json::Node req) {

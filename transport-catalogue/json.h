@@ -43,6 +43,8 @@ public:
     const std::string& AsString() const;
     const Array& AsArray() const;
     const Dict& AsMap() const;
+    Array& AsArray();
+    Dict& AsMap();
     
     bool operator==(const Node& rhs) const {
         return GetValue() == rhs.GetValue();
