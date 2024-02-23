@@ -22,17 +22,10 @@ public:
     using runtime_error::runtime_error;
 };
 
-class Node {
+class Node : private std::variant<std::nullptr_t, int, double, std::string, bool, Array, Dict> {
 public:
-    Node() = default;
-
-    Node(Array array);
-    Node(Dict map);
-    Node(int value);
-    Node(std::string value);    
-    Node(double value);
-    Node(bool value);
-    Node(nullptr_t value);
+    using variant::variant;   
+ 
     Node(Number value);
     
     bool IsInt() const;
@@ -51,19 +44,15 @@ public:
     const Array& AsArray() const;
     const Dict& AsMap() const;
     
-    bool operator == (const Node& node_other) const
-    {
-        return node == node_other.node;
+    bool operator==(const Node& rhs) const {
+        return GetValue() == rhs.GetValue();
     }
     
-    bool operator != (const Node& node_other) const
-    {
-        return node != node_other.node;
-    }
-    const std::variant<std::nullptr_t, int, double, std::string, bool, Array, Dict>& GetValue() const { return node; }
-
-private:    
-    std::variant<std::nullptr_t, int, double, std::string, bool, Array, Dict> node = nullptr;
+    bool operator!=(const Node& rhs) const {
+        return GetValue() != rhs.GetValue();
+    }    
+    
+    const std::variant<std::nullptr_t, int, double, std::string, bool, Array, Dict>& GetValue() const { return *this; }
 };
 
 class Document {
