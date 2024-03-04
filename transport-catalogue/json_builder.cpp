@@ -1,379 +1,107 @@
 #include "json_builder.h"
+#include <exception>
+#include <variant>
+#include <utility>
+
+using namespace std::literals;
 
 namespace json {
 
-    StArrayHelper::StArrayHelper(Builder& br) : b(br){};    
+Builder::Builder()
+    : root_()
+    , nodes_stack_{&root_}
+{}
 
-    StArrayHelper StArrayHelper::StartArray() {
-        if (b.formed_) {
-            throw std::logic_error("Invoking StartArray is not allowed"s);
-        }
-        if (b.nodes_stack_.empty()) {
-            b.root_ = Array{};
-            b.nodes_stack_.push_back(&b.root_);
-        } else {        
-            Node* current = b.nodes_stack_.back();
-            if (current->IsArray()) {
-                current->AsArray().emplace_back(Array{});
-                b.nodes_stack_.push_back(&current->AsArray().back());
-            }        
-        }
-        return StArrayHelper(b);
+Node Builder::Build() {
+    if (!nodes_stack_.empty()) {
+        throw std::logic_error("Attempt to build JSON which isn't finalized"s);
     }
+    return std::move(root_);
+}
 
-    EndArrayHelper StArrayHelper::EndArray() {
-        if (b.formed_ || b.nodes_stack_.empty()) {
-            throw std::logic_error("Invoking EndArray is not allowed"s);
-        }
-        Node* current = b.nodes_stack_.back();
-        if (current->IsArray()) {
-            b.nodes_stack_.pop_back();
-            if (b.nodes_stack_.empty()) {
-                b.formed_ = true;
-            }       
-        }
-        return EndArrayHelper(b);
+Builder::DictValueContext Builder::Key(std::string key) {
+    Node::Value& host_value = GetCurrentValue();
+    
+    if (!std::holds_alternative<Dict>(host_value)) {
+        throw std::logic_error("Key() outside a dict"s);
     }
     
-    StDictHelper StArrayHelper::StartDict() {
-        if (b.formed_) {
-            throw std::logic_error("Invoking StartArray is not allowed"s);
-        }
-        if (b.nodes_stack_.empty()) {
-            b.root_ = Dict{};
-            b.nodes_stack_.push_back(&b.root_);
-        } else {
-            Node* current = b.nodes_stack_.back();
-            if (current->IsArray()) {
-                current->AsArray().emplace_back(Dict{});
-                b.nodes_stack_.push_back(&current->AsArray().back());
-            } else if (current->IsMap() && b.key_) {
-                current->AsMap()[b.key_.value()] = Dict{};
-                b.nodes_stack_.emplace_back(&current->AsMap()[b.key_.value()]);
-                b.key_.reset();
-            }
-        }
-        return StDictHelper(b);
-    }
-    
-    ArrValueHelper StArrayHelper::Value(Node value) {
-        if (b.formed_) {
-            throw std::logic_error("Invoking Value is not allowed"s);
-        }
-        Node* current = b.nodes_stack_.back();        
-        if (current->IsArray()) {
-            current->AsArray().push_back(value);
-        } else if (current->IsMap() && b.key_) {
-            current->AsMap()[b.key_.value()] = value;
-            b.key_.reset();
-        }
-        return ArrValueHelper(b);
-    }
-    
-    StDictHelper::StDictHelper(Builder& br) : b(br){}
-    
-    EndDictHelper StDictHelper::EndDict() {
-        if (b.formed_ || b.nodes_stack_.empty() || b.key_) {
-            throw std::logic_error("Invoking EndDict is not allowed"s);
-        }
-        Node* current = b.nodes_stack_.back();
-        if (current->IsMap()) {
-            b.nodes_stack_.pop_back();
-            if (b.nodes_stack_.empty()) {
-                b.formed_ = true;
-            }
-        } 
-        return EndDictHelper(b);
-    }
-    
-    EndDictHelper::EndDictHelper(Builder& br) : b(br){}
-    
-    ArrValueHelper EndDictHelper::Value(Node value) {
-        if (b.formed_) {
-            throw std::logic_error("Invoking Value is not allowed"s);
-        }
-        Node* current = b.nodes_stack_.back();        
-        if (current->IsArray()) {
-            current->AsArray().push_back(value);
-        }
-        return ArrValueHelper(b);
-    }
-    
-    EndDictHelper EndDictHelper::EndArray() {
-        if (b.formed_ || b.nodes_stack_.empty()) {
-            throw std::logic_error("Invoking EndArray is not allowed"s);
-        }
-        Node* current = b.nodes_stack_.back();
-        if (current->IsArray()) {
-            b.nodes_stack_.pop_back();
-            if (b.nodes_stack_.empty()) {
-                b.formed_ = true;
-            }       
-        } else {
-            throw std::logic_error("Invoking EndArray is not allowed"s);
-        }
-        return EndDictHelper(b);
-    }
-    
-    EndDictHelper EndArrayHelper::EndDict() {
-        if (b.formed_ || b.nodes_stack_.empty() || b.key_) {
-            throw std::logic_error("Invoking EndDict is not allowed"s);
-        }
-        Node* current = b.nodes_stack_.back();
-        if (current->IsMap()) {
-            b.nodes_stack_.pop_back();
-            if (b.nodes_stack_.empty()) {
-                b.formed_ = true;
-            }
-        } else {
-            throw std::logic_error("Invoking EndDict is not allowed"s);
-        }        
-        return EndDictHelper(b);
-    }
-    
-    EndArrayHelper EndArrayHelper::EndArray() {
-        if (b.formed_ || b.nodes_stack_.empty()) {
-            throw std::logic_error("Invoking EndArray is not allowed"s);
-        }
-        Node* current = b.nodes_stack_.back();
-        if (current->IsArray()) {
-            b.nodes_stack_.pop_back();
-            if (b.nodes_stack_.empty()) {
-                b.formed_ = true;
-            }
-        }
-        return EndArrayHelper(b);
-    }
-    ArrValueHelper EndArrayHelper::Value(Node value) {
-        if (b.formed_) {
-            throw std::logic_error("Invoking Value is not allowed"s);
-        }
-        Node* current = b.nodes_stack_.back();        
-        if (current->IsArray()) {
-            current->AsArray().push_back(value);
-        }
-        return ArrValueHelper(b);
-    }
-    
-    KeyHelper EndArrayHelper::Key(std::string key) {
-        if (b.formed_ || b.nodes_stack_.empty()) {
-            throw std::logic_error("Invoking Key is not allowed"s);
-        }
-        Node* current = b.nodes_stack_.back();
-        if (current->IsMap()) {
-            b.key_ = key;
-        }
-        return KeyHelper(b);
-    }
-    
-    StDictHelper EndDictHelper::StartDict() {
-        if (b.formed_) {
-            throw std::logic_error("Invoking StartDict is not allowed"s);
-        }
-        Node* current = b.nodes_stack_.back();
-        if (current->IsArray()) {
-            current->AsArray().emplace_back(Dict{});
-            b.nodes_stack_.push_back(&current->AsArray().back());
-        }
-        return StDictHelper(b);
-    }
-    
-    EndDictHelper EndDictHelper::EndDict() {
-        if (b.formed_ || b.nodes_stack_.empty() || b.key_) {
-            throw std::logic_error("Invoking EndDict is not allowed"s);
-        }
-        Node* current = b.nodes_stack_.back();
-        if (current->IsMap()) {
-            b.nodes_stack_.pop_back();
-            if (b.nodes_stack_.empty()) {
-                b.formed_ = true;
-            }
-        }     
-        return EndDictHelper(b);
-    }
-    
-    EndDictHelper DictValueHelper::EndDict() {
-        if (b.formed_ || b.nodes_stack_.empty() || b.key_) {
-            throw std::logic_error("Invoking EndDict is not allowed"s);
-        }
-        Node* current = b.nodes_stack_.back();
-        if (current->IsMap()) {
-            b.nodes_stack_.pop_back();
-            if (b.nodes_stack_.empty()) {
-                b.formed_ = true;
-            }
-        }      
-        return EndDictHelper(b);
-    }
+    nodes_stack_.push_back(
+        &std::get<Dict>(host_value)[std::move(key)]
+    );
+    return BaseContext{*this};
+}
 
-    EndArrayHelper::EndArrayHelper(Builder& br) : b(br){};
+Builder::BaseContext Builder::Value(Node::Value value) {
+    AddObject(std::move(value), /* one_shot */ true);
+    return *this;
+}
 
-    Node EndArrayHelper::Build() {
-        return b.Build();
-    }
-    
-    Node EndDictHelper::Build() {
-        return b.Build();
-    }
-    
-    KeyHelper EndDictHelper::Key(std::string key) {
-        if (b.formed_ || b.nodes_stack_.empty()) {
-            throw std::logic_error("Invoking Key is not allowed"s);
-        }
-        Node* current = b.nodes_stack_.back();
-        if (current->IsMap()) {
-            b.key_ = key;
-        } 
-        return KeyHelper(b);
-    }
-    
-    Node ValueHelper::Build() {
-        return b.Build();
-    }
-    
-    ValueHelper::ValueHelper(Builder& br) : b(br){}; 
-    ArrValueHelper::ArrValueHelper(Builder& br) : b(br){}; 
-    DictValueHelper::DictValueHelper(Builder& br) : b(br){};     
-    KeyHelper::KeyHelper(Builder& br) : b(br){};
-    
-    EndArrayHelper ArrValueHelper::EndArray() {
-        if (b.formed_ || b.nodes_stack_.empty()) {
-            throw std::logic_error("Invoking EndArray is not allowed"s);
-        }
-        Node* current = b.nodes_stack_.back();
-        if (current->IsArray()) {
-            b.nodes_stack_.pop_back();
-            if (b.nodes_stack_.empty()) {
-                b.formed_ = true;
-            }       
-        }
-        return EndArrayHelper(b); 
-    }
-    
-    StDictHelper ArrValueHelper::StartDict() {
-        if (b.formed_) {
-            throw std::logic_error("Invoking StartDict is not allowed"s);
-        }        
-        Node* current = b.nodes_stack_.back();
-        if (current->IsArray()) {
-            current->AsArray().emplace_back(Dict{});
-            b.nodes_stack_.push_back(&current->AsArray().back());
-        }
-        return StDictHelper(b);
-    }
-    
-    KeyHelper DictValueHelper::Key(std::string key) {
-        if (b.formed_ || b.nodes_stack_.empty()) {
-            throw std::logic_error("Invoking Key is not allowed"s);
-        }
-        Node* current = b.nodes_stack_.back();
-        if (current->IsMap()) {
-            b.key_ = key;
-        } 
-        return KeyHelper(b);
-    }
-    
-    ArrValueHelper ArrValueHelper::Value(Node value) {
-        if (b.formed_) {
-            throw std::logic_error("Invoking Value is not allowed"s);
-        }        
-        Node* current = b.nodes_stack_.back();        
-        if (current->IsArray()) {
-            current->AsArray().push_back(value);
-        }
-        return ArrValueHelper(b);
-    }
-    
-    KeyHelper StDictHelper::Key(std::string key) {
-        if (b.formed_ || b.nodes_stack_.empty()) {
-            throw std::logic_error("Invoking Key is not allowed"s);
-        }
-        Node* current = b.nodes_stack_.back();
-        if (current->IsMap()) {
-            b.key_ = key;
-        }
-        return KeyHelper(b);
-    }
-    
-    DictValueHelper KeyHelper::Value(Node value) {
-        if (b.formed_) {
-            throw std::logic_error("Invoking Value is not allowed"s);
-        }
-        Node* current = b.nodes_stack_.back();        
-        if (current->IsMap() && b.key_) {
-            current->AsMap()[b.key_.value()] = value;
-            b.key_.reset();
-        }        
-        return DictValueHelper(b);
-    }
-    
-    StArrayHelper KeyHelper::StartArray() {
-        if (b.formed_) {
-            throw std::logic_error("Invoking StartArray is not allowed"s);
-        }        
-        Node* current = b.nodes_stack_.back();
-        if (current->IsMap() && b.key_) {
-            current->AsMap()[b.key_.value()] = Array{};
-            b.nodes_stack_.push_back(&current->AsMap()[b.key_.value()]);
-            b.key_.reset();                       
-        }
-        return StArrayHelper(b);
-    }
-    
-    StDictHelper KeyHelper::StartDict() {
-        if (b.formed_) {
-            throw std::logic_error("Invoking StartDict is not allowed"s);
-        }        
-        Node* current = b.nodes_stack_.back();
-        if (current->IsMap() && b.key_) {
-            current->AsMap()[b.key_.value()] = Dict{};
-            b.nodes_stack_.emplace_back(&current->AsMap()[b.key_.value()]);
-            b.key_.reset();                       
-        }
-        return StDictHelper(b);
-    }
+Builder::DictItemContext Builder::StartDict() {
+    AddObject(Dict{}, /* one_shot */ false);
+    return BaseContext{*this};
+}
 
-    ValueHelper Builder::Value(Node value) {       
-        if (formed_) {
-            throw std::logic_error("Invoking Value is not allowed"s);
-        }
-        if (nodes_stack_.empty()) {
-            root_ = value;
-            formed_ = true;
-            return *this;
-        }        
-        return ValueHelper(*this);
+Builder::ArrayItemContext Builder::StartArray() {
+    AddObject(Array{}, /* one_shot */ false);
+    return BaseContext{*this};
+}
+
+Builder::BaseContext Builder::EndDict() {
+    if (!std::holds_alternative<Dict>(GetCurrentValue())) {
+        throw std::logic_error("EndDict() outside a dict"s);
     }
-    
-    StDictHelper Builder::StartDict() {
-        if (formed_) {
-            throw std::logic_error("Invoking StartDict is not allowed"s);
-        }
-        if (nodes_stack_.empty()) {
-            root_ = Dict{};
-            nodes_stack_.push_back(&root_);
-        }
-        return StDictHelper(*this);
+    nodes_stack_.pop_back();
+    return *this;
+}
+
+Builder::BaseContext Builder::EndArray() {
+    if (!std::holds_alternative<Array>(GetCurrentValue())) {
+        throw std::logic_error("EndDict() outside an array"s);
     }
+    nodes_stack_.pop_back();
+    return *this;
+}
     
-    StArrayHelper Builder::StartArray() {
-        if (formed_) {
-            throw std::logic_error("Invoking StartArray is not allowed"s);
-        }
-        if (nodes_stack_.empty()) {
-            root_ = Array{};
-            nodes_stack_.push_back(&root_);
-        }
-        return StArrayHelper(*this);
+// Current value can be:
+// * Dict, when .Key().Value() or EndDict() is expected
+// * Array, when .Value() or EndArray() is expected
+// * nullptr (default), when first call or dict Value() is expected
+
+Node::Value& Builder::GetCurrentValue() {
+    if (nodes_stack_.empty()) {
+        throw std::logic_error("Attempt to change finalized JSON"s);
     }
-    
-    Node Builder::Build() {
-        if (formed_) {
-           return root_; 
-        } else {
-            throw std::logic_error("Invoking Build is not allowed"s);
-        }
-        return root_;
+    return nodes_stack_.back()->GetValue();
+}
+
+// Tell about this trick
+const Node::Value& Builder::GetCurrentValue() const {
+    return const_cast<Builder*>(this)->GetCurrentValue();
+}
+
+void Builder::AssertNewObjectContext() const {
+    if (!std::holds_alternative<std::nullptr_t>(GetCurrentValue())) {
+        throw std::logic_error("New object in wrong context"s);
     }
-    
-} //namespace json
+}
+
+void Builder::AddObject(Node::Value value, bool one_shot) {
+    Node::Value& host_value = GetCurrentValue();
+    if (std::holds_alternative<Array>(host_value)) {
+        // Tell about emplace_back
+        Node& node
+            = std::get<Array>(host_value).emplace_back(std::move(value));
+        if (!one_shot) {
+            nodes_stack_.push_back(&node);
+        }
+    } else {
+        AssertNewObjectContext();
+        host_value = std::move(value);
+        if (one_shot) {
+            nodes_stack_.pop_back();
+        }
+    }
+}
+
+}  // namespace json

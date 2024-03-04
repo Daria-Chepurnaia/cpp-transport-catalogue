@@ -12,24 +12,24 @@ Document JSONReader::MakeJSON(const TransportCatalogue& catalogue, std::ostrings
     for (auto req : stat_reqs_.AsArray()) {
         Dict req_info;
 
-        if (req.AsMap().at("type"s).AsString() == "Stop"s) {                
-            std::optional<StopInfo> stop_info = catalogue.GetStopInfo(req.AsMap().at("name"s).AsString());
+        if (req.AsDict().at("type"s).AsString() == "Stop"s) {                
+            std::optional<StopInfo> stop_info = catalogue.GetStopInfo(req.AsDict().at("name"s).AsString());
             //заполняет словарь req_info информацией об остановке
             FillStopReq(req_info, stop_info);
         }       
 
-        if (req.AsMap().at("type"s).AsString() == "Bus"s) {             
-            std::optional<BusInfo> bus_info = catalogue.GetBusInfo(req.AsMap().at("name"s).AsString());
+        if (req.AsDict().at("type"s).AsString() == "Bus"s) {             
+            std::optional<BusInfo> bus_info = catalogue.GetBusInfo(req.AsDict().at("name"s).AsString());
             //заполняет словарь req_info информацией об автобусе
             FillBusReq(req_info, bus_info);
         }
         
-        if (req.AsMap().at("type"s).AsString() == "Map"s) {             
+        if (req.AsDict().at("type"s).AsString() == "Map"s) {             
             //добавляет карту в словарь req_info 
             req_info["map"] = Node(out.str());
         }
         
-        req_info["request_id"s] = Node(req.AsMap().at("id"s).AsInt());
+        req_info["request_id"s] = Node(req.AsDict().at("id"s).AsInt());
         info.Value(req_info);
     }
     
@@ -38,13 +38,13 @@ Document JSONReader::MakeJSON(const TransportCatalogue& catalogue, std::ostrings
 
 std::vector<std::string> JSONReader::ProcessRoute(json::Node req) {
     std::vector<std::string> stops;
-    for (auto stop : req.AsMap().at("stops"s).AsArray()) {               
+    for (auto stop : req.AsDict().at("stops"s).AsArray()) {               
         stops.push_back(stop.AsString());
     }
 
-    if (req.AsMap().at("is_roundtrip"s).AsBool() == false) {
-        for (int i = req.AsMap().at("stops"s).AsArray().size() - 2; i >= 0; --i) {
-            stops.push_back(req.AsMap().at("stops"s).AsArray()[i].AsString());
+    if (req.AsDict().at("is_roundtrip"s).AsBool() == false) {
+        for (int i = req.AsDict().at("stops"s).AsArray().size() - 2; i >= 0; --i) {
+            stops.push_back(req.AsDict().at("stops"s).AsArray()[i].AsString());
         }         
     }              
     return stops;
@@ -75,20 +75,20 @@ void JSONReader::FillBusReq(Dict& req_info, const std::optional<BusInfo>& bus_in
 
 renderer::RenderSettings JSONReader::GetRenderSettings() {
     renderer::RenderSettings settings;
-    settings.width = render_settings_.AsMap().at("width"s).AsDouble();
-    settings.height = render_settings_.AsMap().at("height"s).AsDouble();
-    settings.padding = render_settings_.AsMap().at("padding"s).AsDouble();
-    settings.line_width = render_settings_.AsMap().at("line_width"s).AsDouble();
-    settings.stop_radius = render_settings_.AsMap().at("stop_radius"s).AsDouble();
-    settings.bus_label_font_size = render_settings_.AsMap().at("bus_label_font_size"s).AsInt();
-    settings.stop_label_font_size = render_settings_.AsMap().at("stop_label_font_size"s).AsInt();
-    settings.bus_label_offset = {render_settings_.AsMap().at("bus_label_offset"s).AsArray()[0].AsDouble(),
-                                 render_settings_.AsMap().at("bus_label_offset"s).AsArray()[1].AsDouble()};
-    settings.stop_label_offset = {render_settings_.AsMap().at("stop_label_offset"s).AsArray()[0].AsDouble(),
-                                  render_settings_.AsMap().at("stop_label_offset"s).AsArray()[1].AsDouble()};
-    settings.underlayer_width = render_settings_.AsMap().at("underlayer_width"s).AsDouble();
-    settings.underlayer_color = ProcessColorNode(render_settings_.AsMap().at("underlayer_color"s));        
-    settings.color_palette = ProcessPaletteNode(render_settings_.AsMap().at("color_palette"s));       
+    settings.width = render_settings_.AsDict().at("width"s).AsDouble();
+    settings.height = render_settings_.AsDict().at("height"s).AsDouble();
+    settings.padding = render_settings_.AsDict().at("padding"s).AsDouble();
+    settings.line_width = render_settings_.AsDict().at("line_width"s).AsDouble();
+    settings.stop_radius = render_settings_.AsDict().at("stop_radius"s).AsDouble();
+    settings.bus_label_font_size = render_settings_.AsDict().at("bus_label_font_size"s).AsInt();
+    settings.stop_label_font_size = render_settings_.AsDict().at("stop_label_font_size"s).AsInt();
+    settings.bus_label_offset = {render_settings_.AsDict().at("bus_label_offset"s).AsArray()[0].AsDouble(),
+                                 render_settings_.AsDict().at("bus_label_offset"s).AsArray()[1].AsDouble()};
+    settings.stop_label_offset = {render_settings_.AsDict().at("stop_label_offset"s).AsArray()[0].AsDouble(),
+                                  render_settings_.AsDict().at("stop_label_offset"s).AsArray()[1].AsDouble()};
+    settings.underlayer_width = render_settings_.AsDict().at("underlayer_width"s).AsDouble();
+    settings.underlayer_color = ProcessColorNode(render_settings_.AsDict().at("underlayer_color"s));        
+    settings.color_palette = ProcessPaletteNode(render_settings_.AsDict().at("color_palette"s));       
 
     return settings;
 }
@@ -96,8 +96,8 @@ renderer::RenderSettings JSONReader::GetRenderSettings() {
 std::map<std::string, bool> JSONReader::GetBusNameToRoundTrip() {
     std::map<std::string, bool> name_to_roundtrip;
     for (auto req : base_reqs_.AsArray()) {
-        if (req.AsMap().at("type"s).AsString() == "Bus") {
-            name_to_roundtrip[req.AsMap().at("name"s).AsString()] = req.AsMap().at("is_roundtrip"s).AsBool();
+        if (req.AsDict().at("type"s).AsString() == "Bus") {
+            name_to_roundtrip[req.AsDict().at("name"s).AsString()] = req.AsDict().at("is_roundtrip"s).AsBool();
         }
     }
     return name_to_roundtrip;
@@ -105,30 +105,30 @@ std::map<std::string, bool> JSONReader::GetBusNameToRoundTrip() {
 
 void JSONReader::FillAllStops(TransportCatalogue& catalogue) {
     for (auto req : base_reqs_.AsArray()) {
-        if (req.AsMap().at("type"s) == "Stop"s) {
-            catalogue.AddStop(req.AsMap().at("name"s).AsString(), {req.AsMap().at("latitude"s).AsDouble(), req.AsMap().at("longitude"s).AsDouble()});
+        if (req.AsDict().at("type"s) == "Stop"s) {
+            catalogue.AddStop(req.AsDict().at("name"s).AsString(), {req.AsDict().at("latitude"s).AsDouble(), req.AsDict().at("longitude"s).AsDouble()});
         }
     }
 }
 
 void JSONReader::FillAllRoutes(TransportCatalogue& catalogue) {
     for (auto req : base_reqs_.AsArray()) {        
-        if (req.AsMap().at("type"s) == "Bus"s) {            
+        if (req.AsDict().at("type"s) == "Bus"s) {            
             std::vector<Stop*> stops_to_add;
             std::vector<std::string> stops = ProcessRoute(req);           
             for (auto stop : stops) {
                 stops_to_add.push_back(catalogue.FindStop(stop));
             }            
-            catalogue.AddBus(req.AsMap().at("name"s).AsString(), stops_to_add);            
+            catalogue.AddBus(req.AsDict().at("name"s).AsString(), stops_to_add);            
         }
     }
 }
 
 void JSONReader::FillAllDistances(TransportCatalogue& catalogue) {
     for (auto req : base_reqs_.AsArray()) {
-        if (req.AsMap().at("type"s) == "Stop"s) {
-            for (auto [stop_to, distance] : req.AsMap().at("road_distances"s).AsMap()) {
-                catalogue.SetDistance(catalogue.FindStop(req.AsMap().at("name"s).AsString()), catalogue.FindStop(stop_to), distance.AsInt());
+        if (req.AsDict().at("type"s) == "Stop"s) {
+            for (auto [stop_to, distance] : req.AsDict().at("road_distances"s).AsDict()) {
+                catalogue.SetDistance(catalogue.FindStop(req.AsDict().at("name"s).AsString()), catalogue.FindStop(stop_to), distance.AsInt());
             } 
         }
     }

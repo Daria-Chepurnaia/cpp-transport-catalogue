@@ -17,9 +17,9 @@ using namespace std::literals;
 class JSONReader {
 public:
     JSONReader(Document doc)
-        : base_reqs_(doc.GetRoot().AsMap().at("base_requests"s))
-        , stat_reqs_(doc.GetRoot().AsMap().at("stat_requests"s))
-        , render_settings_(doc.GetRoot().AsMap().at("render_settings"s))
+        : base_reqs_(doc.GetRoot().AsDict().at("base_requests"s))
+        , stat_reqs_(doc.GetRoot().AsDict().at("stat_requests"s))
+        , render_settings_(doc.GetRoot().AsDict().at("render_settings"s))
     {        
     }
     
