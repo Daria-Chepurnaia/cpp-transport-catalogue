@@ -15,6 +15,7 @@ struct Stop {
 struct Bus {
     std::string route;
     std::vector<Stop*> stops_on_route;
+    bool is_round;
 };
 
 struct StopInfo {
