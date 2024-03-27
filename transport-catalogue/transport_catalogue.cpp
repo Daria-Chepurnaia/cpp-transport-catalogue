@@ -19,9 +19,10 @@ void TransportCatalogue::AddStop(const std::string& name, const geo::Coordinates
     stop_to_buses_[stops_.back().name_of_stop];    
 }
 
-void TransportCatalogue::AddBus(const std::string& route, const vector<Stop*>& stops) {
+void TransportCatalogue::AddBus(const std::string& route, const vector<Stop*>& stops, bool is_round) {
     Bus bus;
     bus.route = route;
+    bus.is_round = is_round;
     for (Stop* stop : stops) {
         bus.stops_on_route.push_back(stop);
     }
@@ -55,7 +56,21 @@ int TransportCatalogue::GetDistance(Stop* stop_from, Stop* stop_to) const {
     }
     return distance;
 }
+    
+int TransportCatalogue::GetStopsCount() const {
+    return stopname_to_stop_.size();
+}
 
+std::vector<std::string_view> TransportCatalogue::GetStopNames() const {
+    std::vector<std::string_view> stops(stopname_to_stop_.size());
+    int i = 0;
+    for(auto&[stop, stop_ptr] : stopname_to_stop_) {
+        stops[i]=stop;
+        ++i;                
+    }
+    return stops;
+}
+    
 optional<BusInfo> TransportCatalogue::GetBusInfo(std::string bus) const {
     if (TransportCatalogue::FindBus(bus) == nullptr) return nullopt;
     BusInfo bus_info;

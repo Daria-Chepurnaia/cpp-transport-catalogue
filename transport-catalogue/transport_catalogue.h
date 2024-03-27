@@ -15,11 +15,13 @@ namespace transport_catalogue{
 class TransportCatalogue {	
     public:    
         void AddStop(const std::string& name, const geo::Coordinates& coordinates);
-        void AddBus(const std::string& route, const std::vector<Stop*>& stops);
+        void AddBus(const std::string& route, const std::vector<Stop*>& stops, bool is_round);
         void SetDistance(Stop* stop_from, Stop* stop_to, int distance);
         Stop* FindStop(std::string_view stop_name) const;
         Bus* FindBus(std::string_view bus_name) const;
         int GetDistance(Stop* stop_from, Stop* stop_to) const;
+        int GetStopsCount() const;
+        std::vector<std::string_view> GetStopNames() const;        
     
         std::optional<BusInfo> GetBusInfo(std::string bus) const;
         std::optional<StopInfo> GetStopInfo(std::string stop) const;

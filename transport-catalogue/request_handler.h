@@ -29,6 +29,3 @@ private:
     const transport_catalogue::TransportCatalogue& db_;
     const renderer::MapRenderer& renderer_;
 };
-
-
-
