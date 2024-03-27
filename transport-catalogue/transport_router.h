@@ -2,6 +2,7 @@
 
 #include "router.h"
 #include "transport_catalogue.h"
+#include <memory>
 
 struct ActivityInfo {
     std::string type;
@@ -11,12 +12,16 @@ struct ActivityInfo {
     int span_count;    
 };
 
+struct RouteReqInfo {
+    std::optional<std::vector<ActivityInfo>> route_info;
+    double total_time;
+};
+
 class TransportRouter {
 public:
-    TransportRouter(const transport_catalogue::TransportCatalogue& catalogue, int bus_wait_time, double bus_velocity);
-    void BuildGraph();
+    TransportRouter(const transport_catalogue::TransportCatalogue& catalogue, int bus_wait_time, double bus_velocity);    
     const graph::DirectedWeightedGraph<double>& GetGraph() const;
-    void GetRoutesInfo(graph::Router<double>* router, const std::string& from, const std::string& to, double& total_weight, std::optional<std::vector<ActivityInfo>>& info);
+    RouteReqInfo GetRoutesInfo(const std::string& from, const std::string& to);    
     
 private:
     const transport_catalogue::TransportCatalogue& catalogue_;
@@ -26,7 +31,9 @@ private:
     //stores name of the route and number of stops for each edge
     std::vector<std::optional<std::pair<std::string_view, int>>>edge_id_to_route_;
     int bus_wait_time_;
-    double bus_velocity_;  
+    double bus_velocity_;
+    std::unique_ptr<graph::Router<double>> router_;
     
+    void BuildGraph();
     void BuildEdges(int external_cycle_var, int max_stop, Bus* bus, std::string_view bus_string_view);
 };

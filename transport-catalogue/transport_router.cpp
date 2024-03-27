@@ -4,9 +4,9 @@ using namespace std::literals;
 
 TransportRouter::TransportRouter(const transport_catalogue::TransportCatalogue& catalogue, int bus_wait_time, double bus_velocity)
     : catalogue_(catalogue)
-        , graph_(catalogue.GetStopsCount()*2)
-        , bus_wait_time_(bus_wait_time)
-        , bus_velocity_(bus_velocity) {
+    , graph_(catalogue.GetStopsCount()*2)
+    , bus_wait_time_(bus_wait_time)
+    , bus_velocity_(bus_velocity) {
         stop_indexes_.reserve(catalogue.GetStopsCount()*2);
         int i=0;            
         for (auto stop : catalogue.GetStopNames()) {
@@ -14,7 +14,9 @@ TransportRouter::TransportRouter(const transport_catalogue::TransportCatalogue& 
             stop_indexes_.push_back(stop);
             stop_indexes_.push_back(stop); 
             i+=2;
-        }            
+        }
+        BuildGraph();
+        router_ = std::make_unique<graph::Router<double>>(graph::Router<double>(graph_));
     }
 void TransportRouter::BuildGraph() {
     //creates edges for waiting on every stop
@@ -41,14 +43,14 @@ const graph::DirectedWeightedGraph<double>& TransportRouter::GetGraph() const {
     return graph_;
 }
 
-void TransportRouter::GetRoutesInfo(graph::Router<double>* router,
-                                    const std::string& from, const std::string& to,
-                                    double& total_weight, std::optional<std::vector<ActivityInfo>>& info) {
-    auto route_info =  router->BuildRoute(stop_to_vertex_id_.at(from), stop_to_vertex_id_.at(to));
+RouteReqInfo TransportRouter::GetRoutesInfo(const std::string& from, const std::string& to) {
+    RouteReqInfo route_req_info;
+    
+    auto route_info =  router_->BuildRoute(stop_to_vertex_id_.at(from), stop_to_vertex_id_.at(to));
     if (!route_info) {           
-        info = std::nullopt;          
+        route_req_info.route_info = std::nullopt;          
     } else {           
-        total_weight = route_info.value().weight;
+        route_req_info.total_time = route_info.value().weight;
         std::vector<ActivityInfo> info_result;
 
         for (const auto& edge : route_info.value().edges) {
@@ -65,8 +67,9 @@ void TransportRouter::GetRoutesInfo(graph::Router<double>* router,
             }
             info_result.push_back(activity);
         }
-        info = info_result;            
+        route_req_info.route_info = info_result;            
     }
+    return route_req_info;
 }
 
 void TransportRouter::BuildEdges(int external_cycle_var, int max_stop, Bus* bus, std::string_view bus_string_view) {                            

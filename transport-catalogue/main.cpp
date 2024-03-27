@@ -12,13 +12,11 @@ int main() {
     TransportCatalogue catalogue;    
     
     json::Document doc = json::Load(cin);    
-    JSONReader reader(doc);   
+    JSONReader reader(doc); 
     
     reader.FillCatalogue(catalogue);
 
-    TransportRouter transport_router(catalogue, reader.GetBusWaitTime(), reader.GetBusVelocity());
-    transport_router.BuildGraph();
-    graph::Router<double> router(transport_router.GetGraph());    
+    TransportRouter transport_router(catalogue, reader.GetBusWaitTime(), reader.GetBusVelocity());    
     
     renderer::RenderSettings settings;   
     renderer::MapRenderer renderer(reader.GetRenderSettings());
@@ -26,8 +24,7 @@ int main() {
     renderer.SetBusesToRender(handler.GetAllRoutesWithInfo());
     renderer.SetInfoBusesToRoundtrip(reader.GetBusNameToRoundTrip());    
     std::ostringstream out;
-    handler.RenderMap(out);
-    reader.SetRouter(&router);
+    handler.RenderMap(out);    
     reader.SetTransportRouter(&transport_router);
     Document doc_to_optput = reader.MakeJSON(catalogue, out);
     

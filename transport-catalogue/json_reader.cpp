@@ -29,11 +29,9 @@ Document JSONReader::MakeJSON(const TransportCatalogue& catalogue, std::ostrings
             req_info["map"] = Node(out.str());
         }
         
-        if (req.AsDict().at("type"s).AsString() == "Route"s) {
-            double total_time = 0.;
-            std::optional<std::vector<ActivityInfo>> route_info;
-            tr_router_->GetRoutesInfo(router_, req.AsDict().at("from"s).AsString(), req.AsDict().at("to"s).AsString(), total_time, route_info);
-            FillRouteReq(req_info, route_info, total_time);            
+        if (req.AsDict().at("type"s).AsString() == "Route"s) {            
+            RouteReqInfo info =  tr_router_->GetRoutesInfo(req.AsDict().at("from"s).AsString(), req.AsDict().at("to"s).AsString());
+            FillRouteReq(req_info, info.route_info, info.total_time);            
         }
         
         req_info["request_id"s] = Node(req.AsDict().at("id"s).AsInt());
@@ -64,9 +62,6 @@ double  JSONReader::GetBusVelocity() const {
     return routing_settings_.AsDict().at("bus_velocity"s).AsDouble()*1000./60.0;
 }
 
-void JSONReader::SetRouter(graph::Router<double>* r) {
-    router_ = r;
-}
 void JSONReader::SetTransportRouter(TransportRouter* tr_r) {
     tr_router_ = tr_r;
 }

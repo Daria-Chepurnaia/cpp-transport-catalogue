@@ -30,8 +30,7 @@ public:
     renderer::RenderSettings GetRenderSettings();
     std::map<std::string, bool> GetBusNameToRoundTrip();
     int GetBusWaitTime() const;
-    double GetBusVelocity() const;
-    void SetRouter(graph::Router<double>* r);
+    double GetBusVelocity() const;    
     void SetTransportRouter(TransportRouter* tr_r);
     
 private:
@@ -43,13 +42,11 @@ private:
     void FillBusReq(Dict& req_info, const std::optional<BusInfo>& bus_info) const; 
     void FillRouteReq(Dict& req_info, const std::optional<std::vector<ActivityInfo>>& route_info, double total_time) const;
     svg::Color ProcessColorNode(Node node);    
-    std::vector<svg::Color> ProcessPaletteNode(Node node);
-    
+    std::vector<svg::Color> ProcessPaletteNode(Node node);    
     
     Node base_reqs_;
     Node stat_reqs_;
     Node render_settings_;
-    Node routing_settings_;
-    graph::Router<double>* router_;  
+    Node routing_settings_;    
     TransportRouter* tr_router_;
 };
