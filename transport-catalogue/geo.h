@@ -4,8 +4,8 @@
 namespace geo {
 
 struct Coordinates {
-    double lat; // Широта
-    double lng; // Долгота
+    double lat; 
+    double lng; 
 };
 
 double ComputeDistance(Coordinates from, Coordinates to);

@@ -11,16 +11,16 @@ public:
         , renderer_(renderer) {            
         }
 
-    // Возвращает информацию о маршруте (запрос Bus)
+    // Returns information about the route (Bus request)
     std::optional<BusInfo> GetBusStat(const std::string_view& bus_name) const;
     
-    // Возвращает маршруты, проходящие через остановку
+    // Returns routes that pass through the stop
     std::set<std::string_view> GetBusesByStop(const std::string_view& stop_name) const;
     
-    // Возвращает все маршруты
+    // Returns all routes
     std::set<std::string_view> GetAllRoutes();
     
-    //возвращает все маршруты хотя бы с одной остановкой в порядке возрастания названия
+    // Returns all routes with at least one stop in alphabetical order
     std::vector<Bus*> GetAllRoutesWithInfo();
     
     void RenderMap(std::ostringstream& out) const;

@@ -72,8 +72,9 @@ struct Point {
 };
 
 /*
- * Вспомогательная структура, хранящая контекст для вывода SVG-документа с отступами.
- * Хранит ссылку на поток вывода, текущее значение и шаг отступа при выводе элемента
+ * Helper structure that stores the context for outputting the SVG document with indentation.
+ * Stores a reference to the output stream, the current indentation level, and the indentation step
+ * when outputting an element.
  */
 struct RenderContext {
     RenderContext(std::ostream& out)
@@ -102,9 +103,9 @@ struct RenderContext {
 };
 
 /*
- * Абстрактный базовый класс Object служит для унифицированного хранения
- * конкретных тегов SVG-документа
- * Реализует паттерн "Шаблонный метод" для вывода содержимого тега
+ * Abstract base class Object serves for unified storage
+ * of specific SVG document tags.
+ * Implements the "Template Method" pattern for outputting tag content.
  */
 template <typename Owner>
 class PathProps {
@@ -137,7 +138,7 @@ public:
 protected:
     ~PathProps() = default;
 
-    // Метод RenderAttrs выводит в поток общие для всех путей атрибуты fill и stroke
+    // The RenderAttrs method outputs common attributes fill and stroke for all paths to the stream.
     void RenderAttrs(std::ostream& out) const {
         using detail::RenderOptionalAttr;
         using namespace std::literals;
@@ -150,8 +151,8 @@ protected:
 
 private:    
     Owner& AsOwner() {
-        // static_cast безопасно преобразует *this к Owner&,
-        // если класс Owner — наследник PathProps
+        // static_cast safely casts *this to Owner&,
+        // if the Owner class is a descendant of PathProps.
         return static_cast<Owner&>(*this);
     }
 
@@ -193,7 +194,7 @@ public:
     
     virtual void AddPtr(std::unique_ptr<Object>&& obj) = 0;
     
-    // Выводит в ostream svg-представление документа
+    // Outputs the SVG representation of the document to the ostream.
     void Render(std::ostream& out) const;
 
     virtual ~ObjectContainer() {}
@@ -217,22 +218,22 @@ private:
 
 class Text final : public Object, public PathProps<Text> {
 public:
-    // Задаёт координаты опорной точки (атрибуты x и y)
+    // Sets the coordinates of the anchor point (attributes x and y)
     Text& SetPosition(Point pos);
 
-    // Задаёт смещение относительно опорной точки (атрибуты dx, dy)
+    // Sets the offset from the anchor point (attributes dx, dy)
     Text& SetOffset(Point offset);
 
-    // Задаёт размеры шрифта (атрибут font-size)
+    // Sets the font size (attribute font-size)
     Text& SetFontSize(uint32_t size);
 
-    // Задаёт название шрифта (атрибут font-family)
+    // Sets the font name (attribute font-family)
     Text& SetFontFamily(std::string font_family);
 
-    // Задаёт толщину шрифта (атрибут font-weight)
+    // Sets the font weight (attribute font-weight)
     Text& SetFontWeight(std::string font_weight);
 
-    // Задаёт текстовое содержимое объекта (отображается внутри тега text)
+    // Sets the text content of the object (displayed inside the text tag)
     Text& SetData(std::string data);
 
 private:
@@ -248,7 +249,7 @@ private:
 
 class Document : public ObjectContainer {
 public:
-    // Добавляет в svg-документ объект-наследник svg::Object
+    // Adds an object derived from svg::Object to the SVG document
     void AddPtr(std::unique_ptr<Object>&& obj) override; 
 };
  

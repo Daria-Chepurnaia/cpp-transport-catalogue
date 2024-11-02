@@ -13,19 +13,19 @@ Document JSONReader::MakeJSON(const TransportCatalogue& catalogue, std::ostrings
         Dict req_info;
 
         if (req.AsDict().at("type"s).AsString() == "Stop"s) {                
-            std::optional<StopInfo> stop_info = catalogue.GetStopInfo(req.AsDict().at("name"s).AsString());
-            //заполняет словарь req_info информацией об остановке
+            std::optional<StopInfo> stop_info = catalogue.GetStopInfo(req.AsDict().at("name"s).AsString());            
+        // Fills the req_info map with information about the bus stop
             FillStopReq(req_info, stop_info);
         }       
 
         if (req.AsDict().at("type"s).AsString() == "Bus"s) {             
             std::optional<BusInfo> bus_info = catalogue.GetBusInfo(req.AsDict().at("name"s).AsString());
-            //заполняет словарь req_info информацией об автобусе
+            // Fills the req_info map with information about the bus
             FillBusReq(req_info, bus_info);
         }
         
         if (req.AsDict().at("type"s).AsString() == "Map"s) {             
-            //добавляет карту в словарь req_info 
+        // Adds a map to the req_info map
             req_info["map"] = Node(out.str());
         }
         
@@ -91,7 +91,6 @@ void JSONReader::FillBusReq(Dict& req_info, const std::optional<BusInfo>& bus_in
 
 void JSONReader::FillRouteReq(Dict& req_info, const std::optional<std::vector<ActivityInfo>>& route_info, double total_time) const {            
     if (!route_info) {
-        //std::cout << "here"<< std::endl;
         req_info["error_message"s] = "not found"s;
     } else {
         Array activities;

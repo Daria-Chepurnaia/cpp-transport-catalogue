@@ -1,8 +1,136 @@
 #include "json.h"
-
-#include <iterator>
+#include <stdexcept>
+#include <utility>
 
 namespace json {
+
+Node::Node(Value value) : variant(std::move(value)) {}
+
+bool Node::IsInt() const {
+    return std::holds_alternative<int>(*this);
+}
+
+int Node::AsInt() const {
+    using namespace std::literals;
+    if (!IsInt()) {
+        throw std::logic_error("Not an int"s);
+    }
+    return std::get<int>(*this);
+}
+
+bool Node::IsPureDouble() const {
+    return std::holds_alternative<double>(*this);
+}
+
+bool Node::IsDouble() const {
+    return IsInt() || IsPureDouble();
+}
+
+double Node::AsDouble() const {
+    using namespace std::literals;
+    if (!IsDouble()) {
+        throw std::logic_error("Not a double"s);
+    }
+    return IsPureDouble() ? std::get<double>(*this) : AsInt();
+}
+
+bool Node::IsBool() const {
+    return std::holds_alternative<bool>(*this);
+}
+
+bool Node::AsBool() const {
+    using namespace std::literals;
+    if (!IsBool()) {
+        throw std::logic_error("Not a bool"s);
+    }
+    return std::get<bool>(*this);
+}
+
+bool Node::IsNull() const {
+    return std::holds_alternative<std::nullptr_t>(*this);
+}
+
+bool Node::IsArray() const {
+    return std::holds_alternative<Array>(*this);
+}
+
+Array& Node::AsArray() {
+    using namespace std::literals;
+    if (!IsArray()) {
+        throw std::logic_error("Not an array"s);
+    }
+    return std::get<Array>(*this);
+}
+
+const Array& Node::AsArray() const {
+    using namespace std::literals;
+    if (!IsArray()) {
+        throw std::logic_error("Not an array"s);
+    }
+    return std::get<Array>(*this);
+}
+
+bool Node::IsString() const {
+    return std::holds_alternative<std::string>(*this);
+}
+
+const std::string& Node::AsString() const {
+    using namespace std::literals;
+    if (!IsString()) {
+        throw std::logic_error("Not a string"s);
+    }
+    return std::get<std::string>(*this);
+}
+
+bool Node::IsDict() const {
+    return std::holds_alternative<Dict>(*this);
+}
+
+Dict& Node::AsDict() {
+    using namespace std::literals;
+    if (!IsDict()) {
+        throw std::logic_error("Not a dict"s);
+    }
+    return std::get<Dict>(*this);
+}
+
+const Dict& Node::AsDict() const {
+    using namespace std::literals;
+    if (!IsDict()) {
+        throw std::logic_error("Not a dict"s);
+    }
+    return std::get<Dict>(*this);
+}
+
+bool Node::operator==(const Node& rhs) const {
+    return GetValue() == rhs.GetValue();
+}
+
+const Node::Value& Node::GetValue() const {
+    return *this;
+}
+
+Node::Value& Node::GetValue() {
+    return *this;
+}
+
+bool operator!=(const Node& lhs, const Node& rhs) {
+    return !(lhs == rhs);
+}
+
+Document::Document(Node root) : root_(std::move(root)) {}
+
+const Node& Document::GetRoot() const {
+    return root_;
+}
+
+bool operator==(const Document& lhs, const Document& rhs) {
+    return lhs.GetRoot() == rhs.GetRoot();
+}
+
+bool operator!=(const Document& lhs, const Document& rhs) {
+    return !(lhs == rhs);
+}
 
 namespace {
 using namespace std::literals;
@@ -127,7 +255,7 @@ Node LoadNull(std::istream& input) {
 Node LoadNumber(std::istream& input) {
     std::string parsed_num;
 
-    // Считывает в parsed_num очередной символ из input
+    // Reads the next character from input into parsed_num
     auto read_char = [&parsed_num, &input] {
         parsed_num += static_cast<char>(input.get());
         if (!input) {
@@ -135,7 +263,7 @@ Node LoadNumber(std::istream& input) {
         }
     };
 
-    // Считывает одну или более цифр в parsed_num из input
+    // Reads one or more digits from input into parsed_num
     auto read_digits = [&input, read_char] {
         if (!std::isdigit(input.peek())) {
             throw ParsingError("A digit is expected"s);
@@ -148,23 +276,23 @@ Node LoadNumber(std::istream& input) {
     if (input.peek() == '-') {
         read_char();
     }
-    // Парсим целую часть числа
+    // Parse the integer part of the number
     if (input.peek() == '0') {
         read_char();
-        // После 0 в JSON не могут идти другие цифры
+    // No other digits can follow 0 in JSON
     } else {
         read_digits();
     }
 
     bool is_int = true;
-    // Парсим дробную часть числа
+    // Parse the fractional part of the number
     if (input.peek() == '.') {
         read_char();
         read_digits();
         is_int = false;
     }
 
-    // Парсим экспоненциальную часть числа
+    // Parse the exponential part of the number
     if (int ch = input.peek(); ch == 'e' || ch == 'E') {
         read_char();
         if (ch = input.peek(); ch == '+' || ch == '-') {
@@ -176,12 +304,12 @@ Node LoadNumber(std::istream& input) {
 
     try {
         if (is_int) {
-            // Сначала пробуем преобразовать строку в int
+            // try to convert the string to an int
             try {
                 return std::stoi(parsed_num);
             } catch (...) {
-                // В случае неудачи, например, при переполнении
-                // код ниже попробует преобразовать строку в double
+            // In case of failure, such as overflow,
+            // the code below will attempt to convert the string to a double
             }
         }
         return std::stod(parsed_num);
@@ -203,12 +331,7 @@ Node LoadNode(std::istream& input) {
         case '"':
             return LoadString(input);
         case 't':
-            // Атрибут [[fallthrough]] (провалиться) ничего не делает, и является
-            // подсказкой компилятору и человеку, что здесь программист явно задумывал
-            // разрешить переход к инструкции следующей ветки case, а не случайно забыл
-            // написать break, return или throw.
-            // В данном случае, встретив t или f, переходим к попытке парсинга
-            // литералов true либо false
+            
             [[fallthrough]];
         case 'f':
             input.putback(c);
@@ -259,7 +382,7 @@ void PrintString(const std::string& value, std::ostream& out) {
                 out << "\\t"sv;
                 break;
             case '"':
-                // Символы " и \ выводятся как \" или \\, соответственно
+                // The characters " and \ are output as \" and \\, respectively
                 [[fallthrough]];
             case '\\':
                 out.put('\\');
@@ -282,10 +405,6 @@ void PrintValue<std::nullptr_t>(const std::nullptr_t&, const PrintContext& ctx) 
     ctx.out << "null"sv;
 }
 
-// В специализации шаблона PrintValue для типа bool параметр value передаётся
-// по константной ссылке, как и в основном шаблоне.
-// В качестве альтернативы можно использовать перегрузку:
-// void PrintValue(bool value, const PrintContext& ctx);
 template <>
 void PrintValue<bool>(const bool& value, const PrintContext& ctx) {
     ctx.out << (value ? "true"sv : "false"sv);
